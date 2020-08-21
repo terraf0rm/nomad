@@ -5,7 +5,7 @@ locals {
   install_script_version   = "${local._platform_install_prefix}nomad_version"
   install_script_binary    = "${local._platform_install_prefix}nomad_binary"
 
-  install_config_script = var.platform == "windows_amd64" ? "C:/opt/install-config.ps1" : "/opt/install-config"
+  install_config_script = var.platform == "windows_amd64" ? "C:/opt/install-nomad-config.ps1" : "/opt/install-nomad-config"
 }
 
 resource "null_resource" "install_nomad_sha" {
