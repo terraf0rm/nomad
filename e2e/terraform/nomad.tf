@@ -1,9 +1,3 @@
-locals {
-  # note these configurations aren't the same as the default values of the
-  # matching variables, because those variables are a list of lists; these get
-  # applied to each node if the variable is set
-}
-
 module "nomad_server" {
 
   depends_on = [aws_instance.server]
@@ -15,14 +9,14 @@ module "nomad_server" {
   nomad_sha          = var.nomad_sha
   nomad_local_binary = var.nomad_local_binary
 
-  config_files = length(var.nomad_server_configs) > count.index ? var.nomad_server_configs[count.index] : var.nomad_default_server_configs
+  config_files = count.index < length(var.nomad_server_configs) ? var.nomad_server_configs[count.index] : var.nomad_default_server_configs
 
   connection = {
     type        = "ssh"
     user        = "ubuntu"
-    host        = "aws_instance.server.${count.index}.public_ip"
+    host        = "${aws_instance.server[count.index].public_ip}"
     port        = 22
-    private_key = module.keys.key_name
+    private_key = module.keys.private_key_pem
   }
 }
 
@@ -39,14 +33,14 @@ module "nomad_client_linux" {
   nomad_sha          = var.nomad_sha
   nomad_local_binary = var.nomad_local_binary
 
-  config_files = length(var.nomad_client_configs_linux) > count.index ? var.nomad_client_configs_linux[count.index] : var.nomad_default_client_configs_linux
+  config_files = count.index < length(var.nomad_client_configs_linux) ? var.nomad_client_configs_linux[count.index] : var.nomad_default_client_configs_linux
 
   connection = {
     type        = "ssh"
     user        = "ubuntu"
-    host        = "aws_instance.client_linux.${count.index}.public_ip"
+    host        = "${aws_instance.client_linux[count.index].public_ip}"
     port        = 22
-    private_key = module.keys.key_name
+    private_key = module.keys.private_key_pem
   }
 }
 
@@ -63,13 +57,13 @@ module "nomad_client_windows" {
   nomad_sha          = var.nomad_sha
   nomad_local_binary = var.nomad_local_binary
 
-  config_files = length(var.nomad_client_configs_windows) > count.index ? var.nomad_client_configs_windows[count.index] : var.nomad_default_client_configs_windows
+  config_files = count.index < length(var.nomad_client_configs_windows) ? var.nomad_client_configs_windows[count.index] : var.nomad_default_client_configs_windows
 
   connection = {
     type        = "ssh"
     user        = "Administrator"
-    host        = "aws_instance.client_windows.${count.index}.public_ip"
+    host        = "${aws_instance.client_windows[count.index].public_ip}"
     port        = 22
-    private_key = module.keys.key_name
+    private_key = module.keys.private_key_pem
   }
 }

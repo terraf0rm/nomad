@@ -10,77 +10,98 @@ locals {
 
 resource "null_resource" "install_nomad_sha" {
 
-  count = var.nomad_sha != "" ? 1 : 0
-  depends_on = [ null_resource.upload_configs ]
+  count      = var.nomad_sha != "" ? 1 : 0
+  depends_on = [null_resource.upload_configs]
   triggers = {
     nomad_sha = var.nomad_sha
+  }
+
+  connection {
+    type        = "ssh"
+    user        = var.connection.user
+    host        = var.connection.host
+    port        = var.connection.port
+    private_key = var.connection.private_key
   }
 
   provisioner "remote-exec" {
     inline = [
       "${local.install_script_sha} ${var.nomad_sha}"
     ]
-    connection {
-      type = "ssh"
-      user = var.connection.user
-      host = var.connection.host
-      port = var.connection.port
-    }
   }
 }
 
 resource "null_resource" "install_nomad_version" {
 
-  count = var.nomad_version != "" ? 1 : 0
-  depends_on = [ null_resource.upload_configs ]
+  count      = var.nomad_version != "" ? 1 : 0
+  depends_on = [null_resource.upload_configs]
   triggers = {
     nomad_version = var.nomad_version
+  }
+
+  connection {
+    type        = "ssh"
+    user        = var.connection.user
+    host        = var.connection.host
+    port        = var.connection.port
+    private_key = var.connection.private_key
   }
 
   provisioner "remote-exec" {
     inline = [
       "${local.install_script_version} ${var.nomad_version}"
     ]
-    connection {
-      type = "ssh"
-      user = var.connection.user
-      host = var.connection.host
-      port = var.connection.port
-    }
   }
 }
 
 resource "null_resource" "install_nomad_binary" {
 
-  count = var.nomad_local_binary != "" ? 1 : 0
-  depends_on = [ null_resource.upload_configs ]
+  count      = var.nomad_local_binary != "" ? 1 : 0
+  depends_on = [
+    null_resource.upload_configs,
+    null_resource.upload_nomad_binary
+  ]
   triggers = {
     nomad_binary_sha = filemd5(var.nomad_local_binary)
   }
 
-  provisioner "file" {
-    source      = var.nomad_local_binary
-    destination = "/tmp/nomad"
-    connection {
-      type = "ssh"
-      user = var.connection.user
-      host = var.connection.host
-      port = var.connection.port
-    }
+  connection {
+    type        = "ssh"
+    user        = var.connection.user
+    host        = var.connection.host
+    port        = var.connection.port
+    private_key = var.connection.private_key
   }
 
   provisioner "remote-exec" {
     inline = [
       "${local.install_script_binary} /tmp/nomad"
     ]
-    connection {
-      type = "ssh"
-      user = var.connection.user
-      host = var.connection.host
-      port = var.connection.port
-    }
   }
 }
+
+resource "null_resource" "upload_nomad_binary" {
+
+  count      = var.nomad_local_binary != "" ? 1 : 0
+  depends_on = [null_resource.upload_configs]
+  triggers = {
+    nomad_binary_sha = filemd5(var.nomad_local_binary)
+  }
+
+  connection {
+    type        = "ssh"
+    user        = var.connection.user
+    host        = var.connection.host
+    port        = var.connection.port
+    private_key = var.connection.private_key
+  }
+
+  provisioner "file" {
+    source      = var.nomad_local_binary
+    destination = "/tmp/nomad"
+  }
+}
+
 
 resource "null_resource" "upload_configs" {
 
@@ -89,48 +110,42 @@ resource "null_resource" "upload_configs" {
     contents = filemd5(each.key)
   }
 
+  connection {
+    type        = "ssh"
+    user        = var.connection.user
+    host        = var.connection.host
+    port        = var.connection.port
+    private_key = var.connection.private_key
+  }
+
   provisioner "file" {
     source      = each.key
     destination = "/tmp/${basename(each.key)}"
-    connection {
-      type = "ssh"
-      user = var.connection.user
-      host = var.connection.host
-      port = var.connection.port
-    }
   }
+}
 
-  # TODO: this is temporary until we bake it into the AMI
-  provisioner "file" {
-    content = <<EOT
-#!/bin/bash
-sudo mkdir -p /etc/nomad.d
-sudo mv /tmp/*.hcl /etc/nomad.d/
-sudo chown -R root:root /etc/nomad.d
-sudo mv /tmp/nomad.server /etc/systemd/system/nomad.service
-EOT
+resource "null_resource" "install_configs" {
 
-    destination = "/tmp/install-config"
-    connection {
-      type = "ssh"
-      user = var.connection.user
-      host = var.connection.host
-      port = var.connection.port
-    }
+  depends_on = [null_resource.upload_configs]
+
+  connection {
+    type        = "ssh"
+    user        = var.connection.user
+    host        = var.connection.host
+    port        = var.connection.port
+    private_key = var.connection.private_key
   }
 
   provisioner "remote-exec" {
     inline = [
+      #"sudo mv /tmp/install-config ${local.install_config_script}",
+      #"${local.install_config_script}",
       # TODO: this is temporary until we bake it into the AMI
-      "sudo mv /tmp/install-config ${local.install_config_script}",
-      # ----
-      "${local.install_config_script}",
+      "sudo mkdir -p /etc/nomad.d",
+      "sudo cp /tmp/*.hcl /etc/nomad.d/",
+      "sudo chown -R root:root /etc/nomad.d",
+      "sudo cp /tmp/nomad.service /etc/systemd/system/nomad.service",
     ]
-    connection {
-      type = "ssh"
-      user = var.connection.user
-      host = var.connection.host
-      port = var.connection.port
-    }
   }
+
 }

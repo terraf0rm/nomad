@@ -71,25 +71,25 @@ variable "aws_assume_role_external_id" {
 variable "nomad_server_configs" {
   description = "A list of lists of config files to upload to the cluster"
   type        = list(list(string))
-  default     = [[]]
+  default     = []
 }
 
 variable "nomad_client_configs_linux" {
   description = "A list of lists of config files to upload to the cluster"
   type        = list(list(string))
-  default     = [[]]
+  default     = []
 }
 
 variable "nomad_client_configs_windows" {
   description = "A list of lists of config files to upload to the cluster"
   type        = list(list(string))
-  default     = [[]]
+  default     = []
 }
 
 variable "nomad_default_server_configs" {
   description = "A default list of server config files"
-  type         = list(string)
-  default      = ["shared/nomad/base.hcl", "shared/nomad/server.hcl", "shared/nomad/nomad.service"]
+  type        = list(string)
+  default     = ["shared/nomad/base.hcl", "shared/nomad/server.hcl", "shared/nomad/nomad.service"]
 }
 
 variable "nomad_default_client_configs_linux" {
